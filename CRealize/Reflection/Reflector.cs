@@ -164,6 +164,11 @@
             return (type == typeof(string) || type.IsEnum || type.IsPrimitive);
         }
 
+        public bool ImplementsInterface(Type type, Type iface)
+        {
+            return type.FindInterfaces((t, c) => t == iface, null).Any();
+        }
+
         public Type GetUnderlyingEnumerableType(Type type)
         {
             return type.GetInterfaces().Where(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>))

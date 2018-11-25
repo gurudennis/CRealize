@@ -219,7 +219,7 @@
                 arr.Add(valueObj);
             }
 
-            return arr;
+            return CreateEnumerable(type, underlyingType, arr);
         }
 
         private object BindValue(object obj, Type type, int depth)
@@ -296,10 +296,24 @@
                 for (int i = 0; i < parameters.Length; ++i)
                 {
                     var memberValue = memberValues.Where((m) => m.Item1.Name == $"Item{i + 1}").FirstOrDefault();
-                    if (memberValue == null)
-                        return null;
+                    if (memberValue != null)
+                        parameters[i] = _reflector.ConvertValue(memberValue.Item3, memberValue.Item2);
+                }
 
-                    parameters[i] = _reflector.ConvertValue(memberValue.Item3, memberValue.Item2);
+                return Activator.CreateInstance(type, parameters);
+            }
+            else if (type.Name.StartsWith("KeyValuePair`"))
+            {
+                if (memberValues == null)
+                    return null;
+
+                object[] parameters = new object[2];
+                for (int i = 0; i < parameters.Length; ++i)
+                {
+                    string paramName = i == 0 ? "Key" : "Value";
+                    var memberValue = memberValues.Where((m) => m.Item1.Name == paramName).FirstOrDefault();
+                    if (memberValue != null)
+                        parameters[i] = _reflector.ConvertValue(memberValue.Item3, memberValue.Item2);
                 }
 
                 return Activator.CreateInstance(type, parameters);
@@ -316,6 +330,33 @@
             }
 
             return result;
+        }
+
+        private IEnumerable CreateEnumerable(Type type, Type underlyingType, IList values)
+        {
+            if (type.Name.StartsWith("IList`") || type.Name.StartsWith("List`"))
+                return values; // optimization: the input happens to have the same type as the output
+
+            {
+                Type collectionType = typeof(ICollection<>).MakeGenericType(underlyingType);
+                if (_reflector.ImplementsInterface(type, collectionType))
+                {
+                    object result = Activator.CreateInstance(type);
+                    if (result == null)
+                        return null;
+
+                    MethodInfo add = collectionType.GetMethod("Add", new Type[] { underlyingType });
+                    if (add == null)
+                        return null;
+
+                    foreach (object value in values)
+                        add.Invoke(result, new object[] { value });
+
+                    return result as IEnumerable;
+                }
+            }
+
+            return null;
         }
 
         private static readonly int MaxDepth = 64;
