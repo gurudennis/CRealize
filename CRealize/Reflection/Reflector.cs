@@ -86,6 +86,22 @@
             return null;
         }
 
+        public object ConvertValue(object value, Type type)
+        {
+            if (IsBasic(type))
+            {
+                try
+                {
+                    value = Convert.ChangeType(value, type);
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            return value;
+        }
+
         public bool SetSerializableValue(object obj, MemberInfo member, object value, Type nominalMemberType = null)
         {
             if (obj == null || member == null)
@@ -94,16 +110,7 @@
             if (nominalMemberType == null)
                 nominalMemberType = GetNominalMemberType(member);
 
-            if (IsBasic(nominalMemberType))
-            {
-                try
-                {
-                    value = Convert.ChangeType(value, nominalMemberType);
-                }
-                catch (Exception)
-                {
-                }
-            }
+            value = ConvertValue(value, nominalMemberType);
 
             {
                 PropertyInfo property = member as PropertyInfo;
@@ -113,7 +120,7 @@
                     {
                         property.SetValue(obj, value);
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
                         return false;
                     }

@@ -44,6 +44,10 @@
 
         public BigBoy BigBoy { get; set; }
 
+        // TODO: public Dictionary<string, int> Dict;
+
+        public Tuple<long, string> Tuple;
+
         public IList<Node> Children { get; set; }
 
         public override bool Equals(object obj)
@@ -52,7 +56,9 @@
             bool eq = node != null &&
                       Var == node.Var &&
                       Boo == node.Boo &&
+                      (Tuple?.Equals(node.Tuple) ?? (Tuple == node.Tuple)) &&
                       BigBoy.Equals(node.BigBoy) &&
+                      // TODO: (Dict?.SequenceEqual(node.Dict) ?? (Dict == node.Dict)) &&
                       (Children?.SequenceEqual(node.Children) ?? (Children == node.Children));
 
             return eq;
@@ -131,7 +137,8 @@
                     {
                         Str = "Teacher",
                         Var = "Leave us kids",
-                        FooOrBar = MyEnum.Bar
+                        FooOrBar = MyEnum.Bar,
+                        // TODO: Dict = new Dictionary<string, int> { { "one", 1 }, { "two", 2 } }
                     },
                     new Node
                     {
@@ -140,6 +147,7 @@
                             One = "Alone",
                             Two = 678
                         },
+                        Tuple = Tuple.Create(789L, "789"),
                         Children = new List<Node>
                         {
                             new Leaf(456)

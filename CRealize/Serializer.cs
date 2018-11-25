@@ -176,29 +176,27 @@
                     type = actualType;
             }
 
-            object result = Activator.CreateInstance(type);
-            if (result == null)
-                return null;
+            IList<Tuple<MemberInfo, Type, object>> memberValues = new List<Tuple<MemberInfo, Type, object>>();
 
             IList<MemberInfo> members = _reflector.GetSerializableMembers(type);
-            if (members == null || members.Count <= 0)
-                return result;
-
-            foreach (MemberInfo member in members)
+            if (members != null && members.Count > 0)
             {
-                if (!proto.GetChild(member.Name, out object memberValue))
-                    continue;
+                foreach (MemberInfo member in members)
+                {
+                    if (!proto.GetChild(member.Name, out object memberValue))
+                        continue;
 
-                Type nominalMemberType = _reflector.GetNominalMemberType(member);
-                if (nominalMemberType == null)
-                    continue;
+                    Type nominalMemberType = _reflector.GetNominalMemberType(member);
+                    if (nominalMemberType == null)
+                        continue;
 
-                memberValue = BindValue(memberValue, nominalMemberType, depth + 1);
+                    memberValue = BindValue(memberValue, nominalMemberType, depth + 1);
 
-                _reflector.SetSerializableValue(result, member, memberValue, nominalMemberType);
+                    memberValues.Add(Tuple.Create(member, nominalMemberType, memberValue));
+                }
             }
 
-            return result;
+            return CreateInstance(type, memberValues);
         }
 
         private IEnumerable BindArray(IEnumerable objs, Type type, int depth)
@@ -285,6 +283,39 @@
                 return null;
 
             return a.GetType(shortNamespaceAndTypeName);
+        }
+
+        private object CreateInstance(Type type, IList<Tuple<MemberInfo, Type, object>> memberValues)
+        {
+            if (type.Name.StartsWith("Tuple`"))
+            {
+                if (memberValues == null)
+                    return null;
+
+                object[] parameters = new object[type.GenericTypeArguments.Length];
+                for (int i = 0; i < parameters.Length; ++i)
+                {
+                    var memberValue = memberValues.Where((m) => m.Item1.Name == $"Item{i + 1}").FirstOrDefault();
+                    if (memberValue == null)
+                        return null;
+
+                    parameters[i] = _reflector.ConvertValue(memberValue.Item3, memberValue.Item2);
+                }
+
+                return Activator.CreateInstance(type, parameters);
+            }
+
+            object result = Activator.CreateInstance(type);
+            if (result == null)
+                return null;
+
+            if (memberValues != null)
+            {
+                for (int i = 0; i < memberValues.Count; ++i)
+                    _reflector.SetSerializableValue(result, memberValues[i].Item1, memberValues[i].Item3, memberValues[i].Item2);
+            }
+
+            return result;
         }
 
         private static readonly int MaxDepth = 64;
