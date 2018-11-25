@@ -337,6 +337,22 @@
             if (type.Name.StartsWith("IList`") || type.Name.StartsWith("List`"))
                 return values; // optimization: the input happens to have the same type as the output
 
+            if (type.IsArray)
+            {
+                object result = Activator.CreateInstance(type, (object)values.Count);
+                if (result == null)
+                    return null;
+
+                MethodInfo set = type.GetMethod("Set", new Type[] { typeof(int), underlyingType });
+                if (set == null)
+                    return null;
+
+                for (int i = 0; i < values.Count; ++i)
+                    set.Invoke(result, new object[] { i, values[i] });
+
+                return result as IEnumerable;
+            }
+
             {
                 Type collectionType = typeof(ICollection<>).MakeGenericType(underlyingType);
                 if (_reflector.ImplementsInterface(type, collectionType))

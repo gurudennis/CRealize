@@ -86,6 +86,8 @@
 
         public int Number { get; private set; }
 
+        public MyEnum[] Arr;
+
         public string Derivative
         {
             get
@@ -109,6 +111,7 @@
                       Number == leaf.Number &&
                       Derivative == leaf.Derivative &&
                       FooOrBar == leaf.FooOrBar &&
+                      (Arr?.SequenceEqual(leaf.Arr) ?? (Arr == leaf.Arr)) &&
                       Hidden == leaf.Hidden &&
                       _alsoHidden == leaf._alsoHidden;
 
@@ -152,7 +155,8 @@
                         {
                             new Leaf(456)
                             {
-                                FooOrBar = MyEnum.Bar
+                                FooOrBar = MyEnum.Bar,
+                                Arr = new MyEnum[] { MyEnum.Foo, MyEnum.Bar }
                             }
                         }
                     }
