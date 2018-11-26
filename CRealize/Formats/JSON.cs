@@ -273,6 +273,6 @@
             return stringBuilder.ToString();
         }
 
-        JavaScriptSerializer _js = new JavaScriptSerializer();
+        private JavaScriptSerializer _js = new JavaScriptSerializer();
     }
 }

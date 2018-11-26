@@ -47,7 +47,7 @@
             return Encoding.UTF8.GetBytes(resultObj as string);
         }
 
-        public T Deserialize<T>(byte[] buf) where T: new()
+        public T Deserialize<T>(byte[] buf) where T : new()
         {
             object input = buf;
             if (!_format.IsBinary)
