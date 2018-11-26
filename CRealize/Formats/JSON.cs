@@ -138,10 +138,25 @@
             if (string.IsNullOrEmpty(name))
                 return null;
 
-            if (char.ToLower(name[0]) != name[0])
-                name = char.ToLower(name[0]) + name.Substring(1);
+            int capCount = 0;
+            for (int i = 0; i < name.Length; ++i)
+            {
+                if (char.ToLower(name[i]) != name[i])
+                    ++capCount;
+                else
+                    break;
+            }
 
-            return name;
+            if (capCount > 1)
+                --capCount; // presume abbreviation followed by camel-case
+
+            StringBuilder sb = new StringBuilder(name.Length);
+            for (int i = 0; i < capCount; ++i)
+                sb.Append(char.ToLower(name[i]));
+
+            sb.Append(name.Substring(capCount));
+
+            return sb.ToString();
         }
 
         private bool IsIEnumerableOfT(Type type)

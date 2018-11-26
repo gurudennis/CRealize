@@ -287,7 +287,7 @@
 
         private object CreateInstance(Type type, IList<Tuple<MemberInfo, Type, object>> memberValues)
         {
-            if (type.Name.StartsWith("Tuple`"))
+            if (_reflector.IsTuple(type))
             {
                 if (memberValues == null)
                     return null;
@@ -302,7 +302,7 @@
 
                 return Activator.CreateInstance(type, parameters);
             }
-            else if (type.Name.StartsWith("KeyValuePair`"))
+            else if (_reflector.IsKeyValuePair(type))
             {
                 if (memberValues == null)
                     return null;
@@ -334,7 +334,7 @@
 
         private IEnumerable CreateEnumerable(Type type, Type underlyingType, IList values)
         {
-            if (type.Name.StartsWith("IList`") || type.Name.StartsWith("List`"))
+            if (_reflector.IsGenericList(type))
                 return values; // optimization: the input happens to have the same type as the output
 
             if (type.IsArray)

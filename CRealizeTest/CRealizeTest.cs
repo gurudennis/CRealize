@@ -38,7 +38,7 @@
     internal class Node
 #pragma warning restore CS0659 // Type overrides Object.Equals(object o) but does not override Object.GetHashCode()
     {
-        public string Var;
+        public string ABCDVar;
 
         public long Boo { get; internal set; }
 
@@ -54,7 +54,7 @@
         {
             var node = obj as Node;
             bool eq = node != null &&
-                      Var == node.Var &&
+                      ABCDVar == node.ABCDVar &&
                       Boo == node.Boo &&
                       (Tuple?.Equals(node.Tuple) ?? (Tuple == node.Tuple)) &&
                       BigBoy.Equals(node.BigBoy) &&
@@ -108,7 +108,6 @@
             bool eq = leaf != null &&
                       base.Equals(obj) &&
                       Str == leaf.Str &&
-                      Number == leaf.Number &&
                       Derivative == leaf.Derivative &&
                       FooOrBar == leaf.FooOrBar &&
                       (Arr?.SequenceEqual(leaf.Arr) ?? (Arr == leaf.Arr)) &&
@@ -127,7 +126,7 @@
         {
             Node nodeIn = new Node()
             {
-                Var = null,
+                ABCDVar = null,
                 Boo = 12345678910,
                 BigBoy = new BigBoy
                 {
@@ -139,7 +138,7 @@
                     new Leaf(123)
                     {
                         Str = "Teacher",
-                        Var = "Leave us kids",
+                        ABCDVar = "Leave us kids",
                         FooOrBar = MyEnum.Bar,
                         Dict = new Dictionary<string, int> { { "one", 1 }, { "two", 2 } }
                     },
@@ -153,7 +152,7 @@
                         Tuple = Tuple.Create(789L, "789"),
                         Children = new List<Node>
                         {
-                            new Leaf(456)
+                            new Leaf()
                             {
                                 FooOrBar = MyEnum.Bar,
                                 Arr = new MyEnum[] { MyEnum.Foo, MyEnum.Bar }
@@ -168,6 +167,14 @@
 
             Node nodeOut = CRealize.Convert.FromJSON<Node>(json);
             Assert.IsFalse(nodeOut == null);
+
+            // Not supposed to be serialized due to being internal
+            Assert.IsTrue(nodeOut.Boo == 0);
+            nodeOut.Boo = nodeIn.Boo;
+
+            // Not supposed to be serialized due to being private; won't be compared below
+            Assert.IsTrue((nodeOut.Children[0] as Leaf).Number == 0);
+
             Assert.IsTrue(nodeOut.Equals(nodeIn));
         }
     }

@@ -18,9 +18,9 @@
             if (type == null)
                 return members;
 
-            BindingFlags binding = BindingFlags.Instance | BindingFlags.Public | BindingFlags.GetProperty;
+            BindingFlags binding = BindingFlags.Instance | BindingFlags.Public;
 
-            members.AddRange(type.GetProperties(binding));
+            members.AddRange(type.GetProperties(binding).Where((p) => IsSerializableProperty(type, p)));
             members.AddRange(type.GetFields(binding));
 
             return members;
@@ -35,9 +35,9 @@
 
             Type type = obj.GetType();
 
-            BindingFlags binding = BindingFlags.Instance | BindingFlags.Public | BindingFlags.GetProperty;
+            BindingFlags binding = BindingFlags.Instance | BindingFlags.Public;
 
-            PropertyInfo[] props = type.GetProperties(binding);
+            IEnumerable<PropertyInfo> props = type.GetProperties(binding).Where((p) => IsSerializableProperty(type, p));
             foreach (PropertyInfo prop in props)
             {
                 try
@@ -164,6 +164,25 @@
             return (type == typeof(string) || type.IsEnum || type.IsPrimitive);
         }
 
+        public bool IsTuple(Type type)
+        {
+            return type.IsConstructedGenericType && type.Name.StartsWith("Tuple`");
+        }
+
+        public bool IsKeyValuePair(Type type)
+        {
+            return type.IsConstructedGenericType && type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>);
+        }
+
+        public bool IsGenericList(Type type)
+        {
+            if (!type.IsConstructedGenericType)
+                return false;
+
+            Type genericType = type.GetGenericTypeDefinition();
+            return genericType == typeof(IList<>) || genericType == typeof(List<>);
+        }
+
         public bool ImplementsInterface(Type type, Type iface)
         {
             return type.FindInterfaces((t, c) => t == iface, null).Any();
@@ -175,6 +194,12 @@
                       ?.FirstOrDefault()
                       ?.GetGenericArguments()
                       ?.FirstOrDefault();
+        }
+
+        private bool IsSerializableProperty(Type type, PropertyInfo property)
+        {
+            // All Tuple and KeyValuePair properties; all publicly writable properties for other types
+            return IsTuple(type) || IsKeyValuePair(type) || (property.CanWrite && (property.GetSetMethod()?.IsPublic ?? false));
         }
     }
 }
