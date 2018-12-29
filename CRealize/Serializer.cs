@@ -47,7 +47,7 @@
             return Encoding.UTF8.GetBytes(resultObj as string);
         }
 
-        public T Deserialize<T>(byte[] buf) where T : new()
+        public T Deserialize<T>(byte[] buf)
         {
             object input = buf;
             if (!_format.IsBinary)
@@ -56,7 +56,7 @@
             return DeserializeInternal<T>(input);
         }
 
-        public T Deserialize<T>(string str) where T : new()
+        public T Deserialize<T>(string str)
         {
             object input = str;
             if (_format.IsBinary)
@@ -150,7 +150,7 @@
             return obj;
         }
 
-        public T DeserializeInternal<T>(object input) where T : new()
+        public T DeserializeInternal<T>(object input)
         {
             Formats.IPrototype proto = _format.DeserializePrototype(input);
             if (proto == null)
@@ -259,7 +259,7 @@
 
             // TODO: Support smarter relative type names where possible.
 
-            return actualType.Assembly.GetName().Name + "." + actualType.FullName;
+            return actualType.Assembly.GetName().Name + "/" + actualType.FullName;
         }
 
         private Type GetPolymorphicType(string typeName)
@@ -269,12 +269,12 @@
 
             // TODO: Support smarter relative type names where possible.
 
-            int firstDotPos = typeName.IndexOf('.');
-            if (firstDotPos < 0 || firstDotPos == typeName.Length - 1)
+            int separatorPos = typeName.IndexOf('/');
+            if (separatorPos < 0 || separatorPos == typeName.Length - 1)
                 return null;
 
-            string shortAssemblyName = typeName.Substring(0, firstDotPos);
-            string shortNamespaceAndTypeName = typeName.Substring(firstDotPos + 1);
+            string shortAssemblyName = typeName.Substring(0, separatorPos);
+            string shortNamespaceAndTypeName = typeName.Substring(separatorPos + 1);
 
 #pragma warning disable CS0618 // Type or member is obsolete
             Assembly a = Assembly.LoadWithPartialName(shortAssemblyName);
@@ -357,7 +357,12 @@
                 Type collectionType = typeof(ICollection<>).MakeGenericType(underlyingType);
                 if (_reflector.ImplementsInterface(type, collectionType))
                 {
-                    object result = Activator.CreateInstance(type);
+                    object result = null;
+                    if (_reflector.IsGenericDictionary(type))
+                        result = Activator.CreateInstance(typeof(Dictionary<,>).MakeGenericType(_reflector.GetUnderlyingDictionaryTypes(type)));
+                    else
+                        result = Activator.CreateInstance(type);
+
                     if (result == null)
                         return null;
 

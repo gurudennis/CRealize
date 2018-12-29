@@ -14,7 +14,7 @@
             return GetJSONSerializer().SerializeToString(obj, pretty, typeof(T));
         }
 
-        public static T FromJSON<T>(string str) where T : new()
+        public static T FromJSON<T>(string str)
         {
             return GetJSONSerializer().Deserialize<T>(str);
         }

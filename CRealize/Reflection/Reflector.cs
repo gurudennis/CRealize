@@ -183,6 +183,15 @@
             return genericType == typeof(IList<>) || genericType == typeof(List<>);
         }
 
+        public bool IsGenericDictionary(Type type)
+        {
+            if (!type.IsConstructedGenericType)
+                return false;
+
+            Type genericType = type.GetGenericTypeDefinition();
+            return genericType == typeof(IDictionary<,>) || genericType == typeof(Dictionary<,>);
+        }
+
         public bool ImplementsInterface(Type type, Type iface)
         {
             return type.FindInterfaces((t, c) => t == iface, null).Any();
@@ -190,10 +199,26 @@
 
         public Type GetUnderlyingEnumerableType(Type type)
         {
-            return type.GetInterfaces().Where(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+            List<Type> interfaceTypes = type.GetInterfaces().ToList();
+            if (type.IsInterface)
+                interfaceTypes.Add(type);
+
+            return interfaceTypes.Where(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>))
                       ?.FirstOrDefault()
                       ?.GetGenericArguments()
                       ?.FirstOrDefault();
+        }
+
+        public Type[] GetUnderlyingDictionaryTypes(Type type)
+        {
+            List<Type> interfaceTypes = type.GetInterfaces().ToList();
+            if (type.IsInterface)
+                interfaceTypes.Add(type);
+
+            return interfaceTypes.Where(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IDictionary<,>))
+                      ?.FirstOrDefault()
+                      ?.GetGenericArguments()
+                      ?.ToArray();
         }
 
         private bool IsSerializableProperty(Type type, PropertyInfo property)
