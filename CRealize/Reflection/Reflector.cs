@@ -88,6 +88,10 @@
 
         public object ConvertValue(object value, Type type)
         {
+            Type underlying = Nullable.GetUnderlyingType(type);
+            if (underlying != null)
+                type = underlying;
+
             if (IsBasic(type))
             {
                 try

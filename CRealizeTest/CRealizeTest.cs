@@ -19,6 +19,8 @@
 
         public uint Two;
 
+        public long? Three;
+
         public override bool Equals(object obj)
         {
             if (!(obj is BigBoy))
@@ -28,7 +30,8 @@
 
             var boy = (BigBoy)obj;
             bool eq = One == boy.One &&
-                      Two == boy.Two;
+                      Two == boy.Two &&
+                      Three == boy.Three;
 
             return eq;
         }
@@ -88,6 +91,8 @@
 
         public MyEnum[] Arr;
 
+        public BigBoy? NullableBigBoy { get; set; }
+
         public string Derivative
         {
             get
@@ -111,6 +116,8 @@
                       Derivative == leaf.Derivative &&
                       FooOrBar == leaf.FooOrBar &&
                       (Arr?.SequenceEqual(leaf.Arr) ?? (Arr == leaf.Arr)) &&
+                      NullableBigBoy.HasValue == leaf.NullableBigBoy.HasValue &&
+                      (!NullableBigBoy.HasValue || NullableBigBoy.Value.Equals(leaf.NullableBigBoy.Value)) &&
                       Hidden == leaf.Hidden &&
                       _alsoHidden == leaf._alsoHidden;
 
@@ -131,7 +138,8 @@
                 BigBoy = new BigBoy
                 {
                     One = "Hey",
-                    Two = 987
+                    Two = 987,
+                    Three = -654
                 },
                 Children = new List<Node>
                 {
@@ -155,7 +163,8 @@
                             new Leaf()
                             {
                                 FooOrBar = MyEnum.Bar,
-                                Arr = new MyEnum[] { MyEnum.Foo, MyEnum.Bar }
+                                Arr = new MyEnum[] { MyEnum.Foo, MyEnum.Bar },
+                                NullableBigBoy = new BigBoy() { Two = 2 }
                             }
                         }
                     }
