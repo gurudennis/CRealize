@@ -21,6 +21,10 @@
 
         public long? Three;
 
+        public Guid? Guid1;
+
+        public Guid Guid2;
+
         public override bool Equals(object obj)
         {
             if (!(obj is BigBoy))
@@ -31,7 +35,9 @@
             var boy = (BigBoy)obj;
             bool eq = One == boy.One &&
                       Two == boy.Two &&
-                      Three == boy.Three;
+                      Three == boy.Three &&
+                      Guid1 == boy.Guid1 &&
+                      Guid2 == boy.Guid2;
 
             return eq;
         }
@@ -44,6 +50,8 @@
         public string ABCDVar;
 
         public long Boo { get; internal set; }
+
+        public DateTime? SomeTime1;
 
         public BigBoy BigBoy { get; set; }
 
@@ -59,6 +67,7 @@
             bool eq = node != null &&
                       ABCDVar == node.ABCDVar &&
                       Boo == node.Boo &&
+                      SomeTime1 == node.SomeTime1 &&
                       (Tuple?.Equals(node.Tuple) ?? (Tuple == node.Tuple)) &&
                       BigBoy.Equals(node.BigBoy) &&
                       (Dict?.SequenceEqual(node.Dict) ?? (Dict == node.Dict)) &&
@@ -139,7 +148,9 @@
                 {
                     One = "Hey",
                     Two = 987,
-                    Three = -654
+                    Three = -654,
+                    Guid1 = Guid.NewGuid(),
+                    Guid2 = Guid.NewGuid()
                 },
                 Children = new List<Node>
                 {
@@ -163,6 +174,7 @@
                             new Leaf()
                             {
                                 FooOrBar = MyEnum.Bar,
+                                SomeTime1 = DateTime.UtcNow,
                                 Arr = new MyEnum[] { MyEnum.Foo, MyEnum.Bar },
                                 NullableBigBoy = new BigBoy() { Two = 2 }
                             }

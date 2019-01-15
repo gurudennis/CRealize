@@ -147,7 +147,7 @@
                     break;
             }
 
-            if (capCount > 1)
+            if (capCount > 1 && capCount != name.Length)
                 --capCount; // presume abbreviation followed by camel-case
 
             StringBuilder sb = new StringBuilder(name.Length);

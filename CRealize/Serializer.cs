@@ -123,7 +123,7 @@
 
             foreach (object obj in objs)
             {
-                object valueObj = BuildValue(obj, nominalUnderlyingType, depth + 1);
+                object valueObj = BuildValue(obj, nominalUnderlyingType, depth);
                 if (valueObj == null)
                     continue;
 
@@ -139,12 +139,20 @@
                 return null;
 
             Type type = obj.GetType();
-            if (!_reflector.IsBasic(type))
+            if (type == typeof(DateTime))
+            {
+                return ((DateTime)obj).ToUniversalTime().Ticks;
+            }
+            else if (type == typeof(Guid))
+            {
+                return ((Guid)obj).ToString();
+            }
+            else if (!_reflector.IsBasic(type))
             {
                 if (obj is IEnumerable)
-                    return BuildArray(obj as IEnumerable, depth + 1);
+                    return BuildArray(obj as IEnumerable, depth);
                 else if (type.IsClass || type.IsInterface || type.IsValueType)
-                    return BuildPrototype(obj, nominalType, depth + 1);
+                    return BuildPrototype(obj, nominalType, depth);
             }
 
             return obj;
@@ -212,7 +220,7 @@
 
             foreach (object obj in objs)
             {
-                object valueObj = BindValue(obj, underlyingType, depth + 1);
+                object valueObj = BindValue(obj, underlyingType, depth);
                 if (valueObj == null)
                     continue;
 
@@ -227,7 +235,16 @@
             if (obj == null || depth > MaxDepth)
                 return null;
 
-            if (_reflector.IsBasic(type))
+            Type underlyingType = Nullable.GetUnderlyingType(type);
+            if (underlyingType == typeof(DateTime) || type == typeof(DateTime))
+            {
+                return new DateTime((long)(_reflector.ConvertValue(obj, typeof(long)) ?? (long)0), DateTimeKind.Utc);
+            }
+            else if (underlyingType == typeof(Guid) || type == typeof(Guid))
+            {
+                return Guid.TryParse(obj as string ?? string.Empty, out Guid g) ? g : Guid.Empty;
+            }
+            else if (_reflector.IsBasic(type))
             {
                 if (type.IsEnum)
                 {
@@ -244,9 +261,9 @@
             else
             {
                 if (obj is IEnumerable)
-                    return BindArray(obj as IEnumerable, type, depth + 1);
+                    return BindArray(obj as IEnumerable, type, depth);
                 else if (obj is Formats.IPrototype)
-                    return BindPrototype(obj as Formats.IPrototype, type, depth + 1);
+                    return BindPrototype(obj as Formats.IPrototype, type, depth);
             }
 
             return obj;
