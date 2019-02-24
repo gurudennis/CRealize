@@ -187,6 +187,15 @@
             return genericType == typeof(IList<>) || genericType == typeof(List<>);
         }
 
+        public bool IsGenericCollection(Type type)
+        {
+            if (!type.IsConstructedGenericType)
+                return false;
+
+            Type genericType = type.GetGenericTypeDefinition();
+            return genericType == typeof(ICollection<>);
+        }
+
         public bool IsGenericDictionary(Type type)
         {
             if (!type.IsConstructedGenericType)
@@ -198,7 +207,7 @@
 
         public bool ImplementsInterface(Type type, Type iface)
         {
-            return type.FindInterfaces((t, c) => t == iface, null).Any();
+            return type == iface || type.FindInterfaces((t, c) => t == iface, null).Any();
         }
 
         public Type GetUnderlyingEnumerableType(Type type)

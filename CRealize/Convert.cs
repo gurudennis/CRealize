@@ -9,7 +9,7 @@
             return GetJSONSerializer().SerializeToString(obj, pretty);
         }
 
-        public static string ToJSONAs<T>(object obj, bool pretty = false)
+        public static string ToJSONAs<T>(T obj, bool pretty = false)
         {
             return GetJSONSerializer().SerializeToString(obj, pretty, typeof(T));
         }

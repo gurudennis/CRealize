@@ -4,6 +4,7 @@
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Net;
     using System.Reflection;
     using System.Text;
 
@@ -147,6 +148,10 @@
             {
                 return ((Guid)obj).ToString();
             }
+            else if (type == typeof(IPAddress))
+            {
+                return ((IPAddress)obj).ToString();
+            }
             else if (!_reflector.IsBasic(type))
             {
                 if (obj is IEnumerable)
@@ -243,6 +248,10 @@
             else if (underlyingType == typeof(Guid) || type == typeof(Guid))
             {
                 return Guid.TryParse(obj as string ?? string.Empty, out Guid g) ? g : Guid.Empty;
+            }
+            else if (underlyingType == typeof(IPAddress) || type == typeof(IPAddress))
+            {
+                return IPAddress.TryParse(obj as string ?? string.Empty, out IPAddress ip) ? ip : null;
             }
             else if (_reflector.IsBasic(type))
             {
@@ -351,7 +360,7 @@
 
         private IEnumerable CreateEnumerable(Type type, Type underlyingType, IList values)
         {
-            if (_reflector.IsGenericList(type))
+            if (_reflector.IsGenericList(type) || _reflector.IsGenericCollection(type))
                 return values; // optimization: the input happens to have the same type as the output
 
             if (type.IsArray)

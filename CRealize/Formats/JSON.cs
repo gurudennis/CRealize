@@ -37,11 +37,33 @@
         {
             value = null;
 
-            name = TransformName(name);
             if (string.IsNullOrEmpty(name))
                 return false;
 
-            if (!_children.TryGetValue(name, out object rawValue))
+            bool found = false;
+            object rawValue = null;
+
+            string transformedName = TransformName(name);
+            if (!string.IsNullOrEmpty(transformedName) && _children.TryGetValue(transformedName, out rawValue)) // first, try strict case lookup
+            {
+                found = true;
+            }
+            else if (_children.TryGetValue(name, out rawValue)) // second, try verbatim case lookup
+            {
+                found = true;
+            }
+            else // third, try case-insensitive lookup
+            {
+                IEnumerable<object> matches = _children.Where((kvp) => kvp.Key?.Equals(name, StringComparison.InvariantCultureIgnoreCase) ?? false).Select((kvp) => kvp.Value);
+                if (matches?.Any() ?? false)
+                {
+                    rawValue = matches.First();
+                    found = true;
+                }
+            }
+
+            // Give up if no match was found by now
+            if (!found)
                 return false;
 
             value = MakeValue(rawValue, null, false, 0);
