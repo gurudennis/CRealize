@@ -13,11 +13,16 @@
         JSON
     }
 
+    public sealed class ForceSerializeAttribute : Attribute
+    {
+    }
+
     public class Serializer
     {
         public Serializer(Format format)
         {
-            _format = Formats.Factory.CreateFormat(format);
+            _enumConverter = new EnumConverter();
+            _format = Formats.Factory.CreateFormat(_enumConverter, format);
             if (_format == null)
                 throw new ApplicationException($"Failed to recognize format {format}");
 
@@ -152,6 +157,10 @@
             {
                 return ((IPAddress)obj).ToString();
             }
+            else if (type == typeof(Version))
+            {
+                return ((Version)obj).ToString();
+            }
             else if (!_reflector.IsBasic(type))
             {
                 if (obj is IEnumerable)
@@ -240,18 +249,22 @@
             if (obj == null || depth > MaxDepth)
                 return null;
 
-            Type underlyingType = Nullable.GetUnderlyingType(type);
-            if (underlyingType == typeof(DateTime) || type == typeof(DateTime))
+            type = Nullable.GetUnderlyingType(type) ?? type;
+            if (type == typeof(DateTime))
             {
                 return new DateTime((long)(_reflector.ConvertValue(obj, typeof(long)) ?? (long)0), DateTimeKind.Utc);
             }
-            else if (underlyingType == typeof(Guid) || type == typeof(Guid))
+            else if (type == typeof(Guid))
             {
                 return Guid.TryParse(obj as string ?? string.Empty, out Guid g) ? g : Guid.Empty;
             }
-            else if (underlyingType == typeof(IPAddress) || type == typeof(IPAddress))
+            else if (type == typeof(IPAddress))
             {
                 return IPAddress.TryParse(obj as string ?? string.Empty, out IPAddress ip) ? ip : null;
+            }
+            else if (type == typeof(Version))
+            {
+                return Version.TryParse(obj as string ?? string.Empty, out Version ver) ? ver : null;
             }
             else if (_reflector.IsBasic(type))
             {
@@ -259,12 +272,16 @@
                 {
                     try
                     {
-                        return Enum.Parse(type, obj as string);
+                        return _enumConverter.StringToEnum(type, obj as string);
                     }
                     catch (Exception)
                     {
                         return null;
                     }
+                }
+                else if (obj != null && obj.GetType() != type)
+                {
+                    return _reflector.ConvertValue(obj, type);
                 }
             }
             else
@@ -360,7 +377,7 @@
 
         private IEnumerable CreateEnumerable(Type type, Type underlyingType, IList values)
         {
-            if (_reflector.IsGenericList(type) || _reflector.IsGenericCollection(type))
+            if (_reflector.IsGenericList(type) || _reflector.IsGenericCollection(type) || _reflector.IsGenericIEnumerable(type))
                 return values; // optimization: the input happens to have the same type as the output
 
             if (type.IsArray)
@@ -408,7 +425,8 @@
 
         private static readonly int MaxDepth = 64;
 
-        private Formats.IFormat _format;
-        private Reflection.Reflector _reflector;
+        private readonly Formats.IFormat _format;
+        private readonly Reflection.Reflector _reflector;
+        private readonly EnumConverter _enumConverter;
     }
 }

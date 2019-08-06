@@ -25,22 +25,13 @@
 
         public Guid Guid2;
 
-        public override bool Equals(object obj)
-        {
-            if (!(obj is BigBoy))
-            {
-                return false;
-            }
-
-            var boy = (BigBoy)obj;
-            bool eq = One == boy.One &&
-                      Two == boy.Two &&
-                      Three == boy.Three &&
-                      Guid1 == boy.Guid1 &&
-                      Guid2 == boy.Guid2;
-
-            return eq;
-        }
+        public override bool Equals(object obj) =>
+            obj is BigBoy boy &&
+            One == boy.One &&
+            Two == boy.Two &&
+            Three == boy.Three &&
+            Guid1 == boy.Guid1 &&
+            Guid2 == boy.Guid2;
     }
 
 #pragma warning disable CS0659 // Type overrides Object.Equals(object o) but does not override Object.GetHashCode()
@@ -61,20 +52,15 @@
 
         public IList<Node> Children { get; set; }
 
-        public override bool Equals(object obj)
-        {
-            var node = obj as Node;
-            bool eq = node != null &&
-                      ABCDVar == node.ABCDVar &&
-                      Boo == node.Boo &&
-                      SomeTime1 == node.SomeTime1 &&
-                      (Tuple?.Equals(node.Tuple) ?? (Tuple == node.Tuple)) &&
-                      BigBoy.Equals(node.BigBoy) &&
-                      (Dict?.SequenceEqual(node.Dict) ?? (Dict == node.Dict)) &&
-                      (Children?.SequenceEqual(node.Children) ?? (Children == node.Children));
-
-            return eq;
-        }
+        public override bool Equals(object obj) =>
+            obj is Node node &&
+            ABCDVar == node.ABCDVar &&
+            Boo == node.Boo &&
+            SomeTime1 == node.SomeTime1 &&
+            (Tuple?.Equals(node.Tuple) ?? (Tuple == node.Tuple)) &&
+            BigBoy.Equals(node.BigBoy) &&
+            (Dict?.SequenceEqual(node.Dict) ?? (Dict == node.Dict)) &&
+            (Children?.SequenceEqual(node.Children) ?? (Children == node.Children));
     }
 
 #pragma warning disable CS0659 // Type overrides Object.Equals(object o) but does not override Object.GetHashCode()
@@ -102,13 +88,7 @@
 
         public BigBoy? NullableBigBoy { get; set; }
 
-        public string Derivative
-        {
-            get
-            {
-                return _alsoHidden;
-            }
-        }
+        public string Derivative => _alsoHidden;
 
         public MyEnum FooOrBar { get; set; }
 
@@ -116,22 +96,17 @@
 
         private string _alsoHidden;
 
-        public override bool Equals(object obj)
-        {
-            var leaf = obj as Leaf;
-            bool eq = leaf != null &&
-                      base.Equals(obj) &&
-                      Str == leaf.Str &&
-                      Derivative == leaf.Derivative &&
-                      FooOrBar == leaf.FooOrBar &&
-                      (Arr?.SequenceEqual(leaf.Arr) ?? (Arr == leaf.Arr)) &&
-                      NullableBigBoy.HasValue == leaf.NullableBigBoy.HasValue &&
-                      (!NullableBigBoy.HasValue || NullableBigBoy.Value.Equals(leaf.NullableBigBoy.Value)) &&
-                      Hidden == leaf.Hidden &&
-                      _alsoHidden == leaf._alsoHidden;
-
-            return eq;
-        }
+        public override bool Equals(object obj) =>
+            base.Equals(obj) &&
+            obj is Leaf leaf &&
+            Str == leaf.Str &&
+            Derivative == leaf.Derivative &&
+            FooOrBar == leaf.FooOrBar &&
+            (Arr?.SequenceEqual(leaf.Arr) ?? (Arr == leaf.Arr)) &&
+            NullableBigBoy.HasValue == leaf.NullableBigBoy.HasValue &&
+            (!NullableBigBoy.HasValue || NullableBigBoy.Value.Equals(leaf.NullableBigBoy.Value)) &&
+            Hidden == leaf.Hidden &&
+            _alsoHidden == leaf._alsoHidden;
     }
 
     [TestClass]
@@ -187,16 +162,21 @@
             Assert.IsFalse(string.IsNullOrEmpty(json));
 
             Node nodeOut = CRealize.Convert.FromJSON<Node>(json);
-            Assert.IsFalse(nodeOut == null);
+            Assert.IsNotNull(nodeOut);
 
             // Not supposed to be serialized due to being internal
-            Assert.IsTrue(nodeOut.Boo == 0);
+            Assert.AreEqual(0, nodeOut.Boo);
             nodeOut.Boo = nodeIn.Boo;
 
             // Not supposed to be serialized due to being private; won't be compared below
-            Assert.IsTrue((nodeOut.Children[0] as Leaf).Number == 0);
+            Assert.AreEqual(0, ((Leaf)nodeOut.Children[0]).Number);
 
             Assert.IsTrue(nodeOut.Equals(nodeIn));
+
+            // Make sure we can deserialize and serialize again a future value.
+            json = json.Replace("\"Foo\"", "\"FutureEnumValue\"");
+            json = CRealize.Convert.ToJSON(CRealize.Convert.FromJSON<Node>(json));
+            Assert.IsTrue(json.Contains("\"FutureEnumValue\""));
         }
     }
 }

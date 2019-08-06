@@ -20,7 +20,7 @@
 
             BindingFlags binding = BindingFlags.Instance | BindingFlags.Public;
 
-            members.AddRange(type.GetProperties(binding).Where((p) => IsSerializableProperty(type, p)));
+            members.AddRange(type.GetProperties(binding).Where((p) => IsSerializableProperty(type, p, true)));
             members.AddRange(type.GetFields(binding));
 
             return members;
@@ -37,7 +37,7 @@
 
             BindingFlags binding = BindingFlags.Instance | BindingFlags.Public;
 
-            IEnumerable<PropertyInfo> props = type.GetProperties(binding).Where((p) => IsSerializableProperty(type, p));
+            IEnumerable<PropertyInfo> props = type.GetProperties(binding).Where((p) => IsSerializableProperty(type, p, false));
             foreach (PropertyInfo prop in props)
             {
                 try
@@ -205,6 +205,15 @@
             return genericType == typeof(IDictionary<,>) || genericType == typeof(Dictionary<,>);
         }
 
+        public bool IsGenericIEnumerable(Type type)
+        {
+            if (!type.IsConstructedGenericType)
+                return false;
+
+            Type genericType = type.GetGenericTypeDefinition();
+            return genericType == typeof(IEnumerable<>);
+        }
+
         public bool ImplementsInterface(Type type, Type iface)
         {
             return type == iface || type.FindInterfaces((t, c) => t == iface, null).Any();
@@ -234,10 +243,14 @@
                       ?.ToArray();
         }
 
-        private bool IsSerializableProperty(Type type, PropertyInfo property)
+        private bool IsSerializableProperty(Type type, PropertyInfo property, bool requireWriteable)
         {
-            // All Tuple and KeyValuePair properties; all publicly writable properties for other types
-            return IsTuple(type) || IsKeyValuePair(type) || (property.CanWrite && (property.GetSetMethod()?.IsPublic ?? false));
+            // All Tuple and KeyValuePair properties; all publicly writable properties for other types;
+            // also all publicly readable properties with attribute ForceSerialize.
+            return IsTuple(type) || IsKeyValuePair(type) ||
+                   (property.CanWrite && (property.SetMethod?.IsPublic ?? false)) ||
+                   (!requireWriteable && property.CanRead && (property.GetMethod?.IsPublic ?? false) &&
+                    property.GetCustomAttribute<ForceSerializeAttribute>() != null);
         }
     }
 }
