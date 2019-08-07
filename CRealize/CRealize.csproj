@@ -74,6 +74,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Convert.cs" />
+    <Compile Include="EnumConverter.cs" />
     <Compile Include="Formats\Factory.cs" />
     <Compile Include="Formats\JSON.cs" />
     <Compile Include="Reflection\Reflector.cs" />

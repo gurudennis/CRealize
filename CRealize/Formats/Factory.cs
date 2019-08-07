@@ -32,10 +32,10 @@
 
     internal static class Factory
     {
-        public static IFormat CreateFormat(Format format)
+        public static IFormat CreateFormat(EnumConverter enumConverter, Format format)
         {
             if (format == Format.JSON)
-                return new JSON();
+                return new JSON(enumConverter);
 
             return null;
         }

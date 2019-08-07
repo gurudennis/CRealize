@@ -9,8 +9,9 @@
 
     internal class JSONPrototype : IPrototype
     {
-        public JSONPrototype(Dictionary<string, object> root = null)
+        public JSONPrototype(EnumConverter enumConverter, Dictionary<string, object> root = null)
         {
+            _enumConverter = enumConverter;
             _children = root ?? new Dictionary<string, object>();
         }
 
@@ -124,15 +125,15 @@
             {
                 Dictionary<string, object> subObj = value as Dictionary<string, object>;
                 if (subObj != null)
-                    return new JSONPrototype(subObj);
+                    return new JSONPrototype(_enumConverter, subObj);
             }
 
             if (type.IsEnum)
-                return value.ToString();
+                return _enumConverter.EnumToString(value);
 
             if (type == typeof(string))
                 return value as string;
-            
+
             {
                 IEnumerable arr = value as IEnumerable;
                 if (arr != null)
@@ -190,16 +191,23 @@
 
         private static readonly int MaxDepth = 64;
 
-        private Dictionary<string, object> _children;
+        private readonly Dictionary<string, object> _children;
+
+        private readonly EnumConverter _enumConverter;
     }
 
     internal class JSON : IFormat
     {
+        public JSON(EnumConverter enumConverter)
+        {
+            _enumConverter = enumConverter;
+        }
+
         public bool IsBinary => false;
 
         public IPrototype CreatePrototype()
         {
-            return new JSONPrototype();
+            return new JSONPrototype(_enumConverter);
         }
 
         public object SerializePrototype(IPrototype proto, bool pretty)
@@ -225,10 +233,10 @@
             if (root == null)
                 return null;
 
-            return new JSONPrototype(root);
+            return new JSONPrototype(_enumConverter, root);
         }
 
-        private string Prettify(string json)
+        public static string Prettify(string json)
         {
             var stringBuilder = new StringBuilder();
 
@@ -295,6 +303,7 @@
             return stringBuilder.ToString();
         }
 
-        private JavaScriptSerializer _js = new JavaScriptSerializer();
+        private readonly EnumConverter _enumConverter;
+        private readonly JavaScriptSerializer _js = new JavaScriptSerializer();
     }
 }
