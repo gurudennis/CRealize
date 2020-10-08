@@ -200,6 +200,9 @@
     {
         public JSON(EnumConverter enumConverter)
         {
+            _js = new JavaScriptSerializer();
+            _js.MaxJsonLength = 16 * 1024 * 1024; // 16+ million characters, or 32 MB
+
             _enumConverter = enumConverter;
         }
 
@@ -304,6 +307,6 @@
         }
 
         private readonly EnumConverter _enumConverter;
-        private readonly JavaScriptSerializer _js = new JavaScriptSerializer();
+        private readonly JavaScriptSerializer _js;
     }
 }

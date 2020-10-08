@@ -193,7 +193,7 @@
                 return false;
 
             Type genericType = type.GetGenericTypeDefinition();
-            return genericType == typeof(ICollection<>);
+            return genericType == typeof(ICollection<>) || genericType == typeof(IReadOnlyCollection<>);
         }
 
         public bool IsGenericDictionary(Type type)
@@ -217,6 +217,14 @@
         public bool ImplementsInterface(Type type, Type iface)
         {
             return type == iface || type.FindInterfaces((t, c) => t == iface, null).Any();
+        }
+
+        public bool IsCompatibleType(Type derivedType, Type baseType)
+        {
+            if (derivedType == null || baseType == null)
+                return false;
+
+            return derivedType == baseType || baseType.IsAssignableFrom(derivedType);
         }
 
         public Type GetUnderlyingEnumerableType(Type type)

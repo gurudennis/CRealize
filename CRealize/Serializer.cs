@@ -17,6 +17,10 @@
     {
     }
 
+    public sealed class SerializeAsStringAttribute : Attribute
+    {
+    }
+
     public class Serializer
     {
         public Serializer(Format format)
@@ -161,6 +165,10 @@
             {
                 return ((Version)obj).ToString();
             }
+            else if (type.GetCustomAttribute<SerializeAsStringAttribute>() != null)
+            {
+                return obj.ToString();
+            }
             else if (!_reflector.IsBasic(type))
             {
                 if (obj is IEnumerable)
@@ -194,7 +202,7 @@
             if (!string.IsNullOrEmpty(actualTypeName))
             {
                 Type actualType = GetPolymorphicType(actualTypeName);
-                if (actualType != null)
+                if (actualType != null && _reflector.IsCompatibleType(actualType, type))
                     type = actualType;
             }
 
@@ -266,6 +274,10 @@
             {
                 return Version.TryParse(obj as string ?? string.Empty, out Version ver) ? ver : null;
             }
+            else if (type.GetCustomAttribute<SerializeAsStringAttribute>() != null && obj is string)
+            {
+                return Activator.CreateInstance(type, obj);
+            }
             else if (_reflector.IsBasic(type))
             {
                 if (type.IsEnum)
@@ -302,7 +314,7 @@
 
             // TODO: Support smarter relative type names where possible.
 
-            return actualType.Assembly.GetName().Name + "/" + actualType.FullName;
+            return $"{actualType.Assembly.GetName().Name}/{actualType.FullName}";
         }
 
         private Type GetPolymorphicType(string typeName)
@@ -322,6 +334,19 @@
 #pragma warning disable CS0618 // Type or member is obsolete
             Assembly a = Assembly.LoadWithPartialName(shortAssemblyName);
 #pragma warning restore CS0618 // Type or member is obsolete
+
+            if (a == null)
+            {
+                foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    if (assembly.GetName().Name == shortAssemblyName)
+                    {
+                        a = assembly;
+                        break;
+                    }
+                }
+            }
+
             if (a == null)
                 return null;
 
@@ -338,7 +363,7 @@
                 object[] parameters = new object[type.GenericTypeArguments.Length];
                 for (int i = 0; i < parameters.Length; ++i)
                 {
-                    var memberValue = memberValues.Where((m) => m.Item1.Name == $"Item{i + 1}").FirstOrDefault();
+                    var memberValue = memberValues.FirstOrDefault((m) => m.Item1.Name == $"Item{i + 1}");
                     if (memberValue != null)
                         parameters[i] = _reflector.ConvertValue(memberValue.Item3, memberValue.Item2);
                 }
@@ -354,7 +379,7 @@
                 for (int i = 0; i < parameters.Length; ++i)
                 {
                     string paramName = i == 0 ? "Key" : "Value";
-                    var memberValue = memberValues.Where((m) => m.Item1.Name == paramName).FirstOrDefault();
+                    var memberValue = memberValues.FirstOrDefault((m) => m.Item1.Name == paramName);
                     if (memberValue != null)
                         parameters[i] = _reflector.ConvertValue(memberValue.Item3, memberValue.Item2);
                 }
